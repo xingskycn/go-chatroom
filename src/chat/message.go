@@ -7,9 +7,12 @@ import (
 
 const (
 	_ = iota
-	MESSAGE
-	DISCONNECT
+	NORMAL
+	QUIT
 	JOIN
+	DISMISS
+	PAUSE
+	KICK
 )
 
 type Message struct {
