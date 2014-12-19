@@ -7,33 +7,35 @@ import (
 )
 
 func kickName(msg *Message) string {
-	return fmt.Sprintf("%s", msg.Message)
+	return fmt.Sprintf("%s", msg.Content)
 }
 
 type Room struct {
+	Server  *ChatServer
 	Name    string
-	clients map[string]*Client
+	Clients map[string]*Client
 	In      chan *Message
 	Quit    chan bool
 }
 
 func (r *Room) Listen() {
 
-	log.Printf("Chatroom: ", r.Name, " opened")
+	log.Printf("Chatroom: %s opened", r.Name)
 	for {
 		select {
 		case msg := <-r.In:
 			switch msg.Command {
 			case QUIT:
-				delete(r.clients, msg.Sender.Name)
+				delete(r.Clients, msg.Sender.Name)
 				go r.broadcast(msg)
 			case JOIN:
-				r.clients[msg.Sender.Name] = msg.Sender
+				log.Printf("%s joined", msg.Sender.Name)
+				r.Clients[msg.Sender.Name] = msg.Sender
 				go r.broadcast(msg)
 			case KICK:
 				name := kickName(msg)
-				if val, ok := r.clients[name]; ok {
-					delete(r.clients, name)
+				if _, ok := r.Clients[name]; ok {
+					delete(r.Clients, name)
 					go r.broadcast(msg)
 				}
 			case DISMISS:
@@ -45,10 +47,11 @@ func (r *Room) Listen() {
 			}
 
 		case <-r.Quit:
-			for k := range r.clients {
-				delete(r.clients, k)
+			delete(r.Server.Rooms, r.Name)
+			for k := range r.Clients {
+				delete(r.Clients, k)
 			}
-			log.Printf("Chatroom: ", r.Name, " closed")
+			log.Printf("Chatroom: %s closed", r.Name)
 			// Ok, Mission Completed
 			return
 		}
@@ -57,8 +60,8 @@ func (r *Room) Listen() {
 
 func (r *Room) broadcast(msg *Message) {
 
-	for _, c := range r.clients {
-		c.Incomming <- msg
+	for _, c := range r.Clients {
+		c.In <- msg
 	}
 
 }

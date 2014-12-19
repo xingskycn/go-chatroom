@@ -6,5 +6,6 @@ import (
 )
 
 func main() {
-	chat.Serve()
+	server := &chat.ChatServer{":12345", make(map[string]*chat.Room)}
+	server.ListenAndServe()
 }
